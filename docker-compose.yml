@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v2.9
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.websecure.address=:443'
+      - '--certificatesresolvers.le.acme.email=myemail@example.com'
+      - '--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.le.acme.httpchallenge.entrypoint=web'
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_data:/letsencrypt
+
+  frontend:
+    build: ./frontend
+    labels:
+      - traefik.http.routers.frontend.rule=Host(`domain.com`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls.certresolver=le
+
+  auth-api:
+    build: ./auth-api
+    labels:
+      - traefik.http.routers.auth.rule=Host(`auth.domain.com`)
+      - traefik.http.routers.auth.entrypoints=websecure
+      - traefik.http.routers.auth.tls.certresolver=le
+
+  todos-api:
+    build: ./todos-api
+    labels:
+      - traefik.http.routers.todos.rule=Host(`todos.domain.com`)
+      - traefik.http.routers.todos.entrypoints=websecure
+      - traefik.http.routers.todos.tls.certresolver=le
+
+  users-api:
+    build: ./users-api
+    labels:
+      - traefik.http.routers.users.rule=Host(`users.domain.com`)
+      - traefik.http.routers.users.entrypoints=websecure
+      - traefik.http.routers.users.tls.certresolver=le
+
+  log-processor:
+    build: ./log-message-processor
+
+  redis:
+    image: redis:alpine
+
+volumes:
+  traefik_data: null

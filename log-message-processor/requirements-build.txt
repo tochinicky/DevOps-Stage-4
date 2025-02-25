@@ -1,0 +1,5 @@
+# Packages needing compilation
+wheel
+setuptools
+cffi
+cython>=0.29.0
