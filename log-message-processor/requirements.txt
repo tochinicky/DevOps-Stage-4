@@ -1,5 +1,4 @@
-redis>=4.0.0        # Modern redis client
-py_zipkin>=1.0.0    # Modern zipkin client (requires thriftpy2)
+redis>=4.0.0     
+py_zipkin>=1.0.0    
 requests>=2.25.0
 thriftpy2>=0.5.0
-#cython>=0.29.0      # Required for thriftpy2 compilation
