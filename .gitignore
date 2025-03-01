@@ -1,0 +1,4 @@
+certs/hngvault-devops-tls.pem
+certs/traefik-cert.crt
+certs/traefik-cert.key
+log-message-processor/requirements-build.txt

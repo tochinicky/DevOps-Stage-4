@@ -9,13 +9,17 @@ services:
       - "--api.dashboard=true" # Enable Traefik's dashboard
       - "--api.insecure=true" # Optional: Only for local testing. Use secure access in production.
       - "--providers.docker=true" # Enable Docker provider to discover containers
-      - "--entrypoints.web.address=:80" # Define HTTP entrypoint
-      - "--entrypoints.websecure.address=:443" # Define HTTPS entrypoint
-      - "--certificatesresolvers.mytls.acme.tlschallenge=true" # Enable TLS challenge for certs
-      - "--certificatesresolvers.mytls.acme.email=tochinicky@gmail.com" # Your email for ACME
-      - "--certificatesresolvers.mytls.acme.storage=/letsencrypt/acme.json" # Store certs and ensures renewal
-      - "--entrypoints.web.http.redirections.entryPoint.to=websecure" # Redirect HTTP to HTTPS
-      - "--entrypoints.web.http.redirections.entryPoint.scheme=https" # Ensure redirection uses HTTPS
+      # - "--entrypoints.web.address=:80" # Define HTTP entrypoint
+      # - "--entrypoints.websecure.address=:443" # Define HTTPS entrypoint
+      # - "--certificatesresolvers.mytls.acme.tlschallenge=true" # Enable TLS challenge for certs
+      # - "--certificatesresolvers.mytls.acme.email=tochinicky@gmail.com" # Your email for ACME
+      # - "--certificatesresolvers.mytls.acme.storage=/letsencrypt/acme.json" # Store certs and ensures renewal
+      # - "--entrypoints.web.http.redirections.entryPoint.to=websecure" # Redirect HTTP to HTTPS
+      # - "--entrypoints.web.http.redirections.entryPoint.scheme=https" # Ensure redirection uses HTTPS
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.websecure.http.tls=true"
+      - "--providers.file.filename=/traefik_dynamic.yml"
     ports:
       - "80:80" # Expose HTTP port
       - "443:443" # Expose HTTPS port
@@ -23,7 +27,8 @@ services:
 
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock:ro" # Docker socket for Traefik to access containers
-      - "./letsencrypt:/letsencrypt"
+      - "./certs:/certs:ro" # SSL certs for HTTPS
+      - "./traefik_dynamic.yml:/traefik_dynamic.yml:ro"
 
   frontend:
     build:
@@ -47,7 +52,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.entrypoints=websecure" # Ensure traffic is served over HTTPS
       - "traefik.http.routers.frontend.rule=Host(`devopshng.online`)" # Domain for the frontend service
-      - "traefik.http.routers.frontend.tls.certresolver=mytls" # Use ACME resolver for SSL certs
 
   auth-api:
     build:
@@ -64,7 +68,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.auth.entrypoints=websecure" # Ensure traffic is served over HTTPS
       - "traefik.http.routers.auth.rule=Host(`auth.devopshng.online`)" # Domain for the auth service
-      - "traefik.http.routers.auth.tls.certresolver=mytls" # Use ACME resolver for SSL certs
 
   todos-api:
     build:
@@ -85,7 +88,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.todos.entrypoints=websecure" # Ensure traffic is served over HTTPS
       - "traefik.http.routers.todos.rule=Host(`todos.devopshng.online`)" # Domain for the todos service
-      - "traefik.http.routers.todos.tls.certresolver=mytls" # Use ACME resolver for SSL certs
 
   users-api:
     build:
@@ -93,7 +95,7 @@ services:
       dockerfile: Dockerfile
     container_name: users-api
     ports:
-      - "${SERVER_PORT}:8083"
+      - "8083:8083"
     environment:
       - SERVER_PORT=${SERVER_PORT}
       - JWT_SECRET=${JWT_SECRET}
@@ -101,7 +103,6 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.users.entrypoints=websecure" # Ensure traffic is served over HTTPS
       - "traefik.http.routers.users.rule=Host(`users.devopshng.online`)" # Domain for the users service
-      - "traefik.http.routers.users.tls.certresolver=mytls" # Use ACME resolver for SSL certs
 
   log-processor:
     build:
@@ -116,6 +117,11 @@ services:
       - REDIS_CHANNEL=${REDIS_CHANNEL}
     depends_on:
       - redis-queue
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
 
   redis-queue:
     image: redis:alpine
