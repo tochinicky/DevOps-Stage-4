@@ -109,6 +109,8 @@ services:
       context: ./log-message-processor
       dockerfile: Dockerfile
     container_name: log-processor
+    ports:
+      - "9090:9090"
     environment:
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PORT=${REDIS_PORT}
